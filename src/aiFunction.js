@@ -53,11 +53,7 @@ export function createAiFunctionInstance(apiKey) {
                 useInternalStream = false,
                 promptVars = {},
                 current_date_time = new Date().toISOString(),
-                agentArgs = {
-                    agentType: "chat-zero-shot-react-description",
-                    agentTools: [],
-                    agentTask: ""
-                },
+                agentArgs = {},
         } = options;
         let funcReturnString = funcReturn;
         let argsString = '';
@@ -79,7 +75,7 @@ export function createAiFunctionInstance(apiKey) {
             }
         }
 
-        if (agentArgs.agentTask) {
+        if (agentArgs) {
             args.agentData = await getDataFromAgent(options, agentArgs);
         }
         if (!args) {
@@ -177,13 +173,19 @@ export function createAiFunctionInstance(apiKey) {
     async function getDataFromAgent(options, agentData) {
         let {
             showDebug = false,
-                langchainVerbose = false,
+            langchainVerbose = false,
         } = options;
+
+        let {
+            agentType = 'chat-zero-shot-react-description',
+            agentTask = 'I need a full explanation of what is langchain js and what it does to be able to explain it to my friends.',
+            agentTools = []
+        } = agentData;
 
         if (showDebug) {
             console.log(chalk.yellow('####################'));
-            console.log(chalk.blue('Using agent: ' + agentData.agentType));
-            console.log(chalk.blue('With task: ' + agentData.agentTask));
+            console.log(chalk.blue('Using agent: ' + agentType));
+            console.log(chalk.blue('With task: ' + agentTask));
         }
 
         const model = new ChatOpenAI({
@@ -193,15 +195,15 @@ export function createAiFunctionInstance(apiKey) {
         });
 
         // Check if WebBrowser is in agentTools
-        if (agentData.agentTools) {
-            for (let i = 0; i < agentData.agentTools.length; i++) {
-                if (agentData.agentTools[i] == WebBrowserTool()) {
+        if (agentTools) {
+            for (let i = 0; i < agentTools.length; i++) {
+                if (agentTools[i] == WebBrowserTool()) {
 
                     const embeddings = new OpenAIEmbeddings({
                         apiKey: openaiApiKey,
                         verbose: langchainVerbose,
                     });
-                    agentData.agentTools[i] = new WebBrowser({
+                    agentTools[i] = new WebBrowser({
                         model: model,
                         embeddings: embeddings,
                         verbose: langchainVerbose,
@@ -210,15 +212,15 @@ export function createAiFunctionInstance(apiKey) {
             }
         }
 
-        const executor = await initializeAgentExecutorWithOptions(agentData.agentTools, model, {
-            agentType: agentData.agentType,
+        const executor = await initializeAgentExecutorWithOptions(agentTools, model, {
+            agentType: agentType,
             verbose: langchainVerbose,
         });
         if (showDebug) {
-            console.log(chalk.blue('Agent initialized: ' + agentData.agentType));
+            console.log(chalk.blue('Agent initialized: ' + agentType));
         }
         const result = await executor.call({
-            input: agentData.agentTask,
+            input: agentTask,
         });
 
         if (showDebug) {
