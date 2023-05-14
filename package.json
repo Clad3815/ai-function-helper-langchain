@@ -1,6 +1,6 @@
 {
     "name": "ai-function-helper-langchain",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "A NodeJS utility to simplify interaction with OpenAI GPT models (langchain ready)",
     "main": "src/aiFunction.js",
     "type": "module",
