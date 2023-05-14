@@ -61,7 +61,7 @@ In summary, the `aiFunction` script offers a more efficient and convenient way o
 To install the `aiFunction` module, simply run the following command:
 
 ```bash
-npm install ai-function-helper
+npm install ai-function-helper-langchain
 ```
 
 ## Usage
