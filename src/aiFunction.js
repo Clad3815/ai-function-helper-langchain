@@ -78,7 +78,7 @@ export function createAiFunctionInstance(apiKey) {
         if (agentArgs) {
             args = await getDataFromAgent(args, options, agentArgs);
         }
-        
+
         if (!args) {
             args = {
                 start: true,
@@ -174,15 +174,15 @@ export function createAiFunctionInstance(apiKey) {
     async function getDataFromAgent(args, options, agentData) {
         let {
             showDebug = false,
-            langchainVerbose = false,
+                langchainVerbose = false,
         } = options;
 
         let {
             agentType = 'chat-zero-shot-react-description',
-            agentTask = '',
-            agentTools = [],
-            agentModel = 'gpt-3.5-turbo',
-            agentReturnKey = 'agentData',
+                agentTask = '',
+                agentTools = [],
+                agentModel = 'gpt-3.5-turbo',
+                agentReturnKey = 'agentData',
         } = agentData;
 
         if (agentTask === '') {
@@ -231,11 +231,12 @@ export function createAiFunctionInstance(apiKey) {
         });
 
         if (showDebug) {
-            console.log(chalk.blue('Returning agent result: ' + result));
+            console.log(chalk.blue('Returning agent result: ' + JSON.stringify(result)));
             console.log(chalk.yellow('####################'));
         }
 
         args[agentReturnKey] = result;
+        return args;
     }
 
     async function getDataFromAPIStream(options, messages, dictAdded) {
