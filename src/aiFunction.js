@@ -76,8 +76,9 @@ export function createAiFunctionInstance(apiKey) {
         }
 
         if (agentArgs) {
-            args.agentData = await getDataFromAgent(options, agentArgs);
+            args = await getDataFromAgent(args, options, agentArgs);
         }
+        
         if (!args) {
             args = {
                 start: true,
@@ -170,7 +171,7 @@ export function createAiFunctionInstance(apiKey) {
 
     }
 
-    async function getDataFromAgent(options, agentData) {
+    async function getDataFromAgent(args, options, agentData) {
         let {
             showDebug = false,
             langchainVerbose = false,
@@ -178,10 +179,15 @@ export function createAiFunctionInstance(apiKey) {
 
         let {
             agentType = 'chat-zero-shot-react-description',
-            agentTask = 'I need a full explanation of what is langchain js and what it does to be able to explain it to my friends.',
-            agentTools = []
+            agentTask = '',
+            agentTools = [],
+            agentModel = 'gpt-3.5-turbo',
+            agentReturnKey = 'agentData',
         } = agentData;
 
+        if (agentTask === '') {
+            throw new Error('You must specify a valid agent task');
+        }
         if (showDebug) {
             console.log(chalk.yellow('####################'));
             console.log(chalk.blue('Using agent: ' + agentType));
@@ -192,6 +198,7 @@ export function createAiFunctionInstance(apiKey) {
             apiKey: openaiApiKey,
             temperature: 0,
             verbose: langchainVerbose,
+            modelName: agentModel,
         });
 
         // Check if WebBrowser is in agentTools
@@ -228,7 +235,7 @@ export function createAiFunctionInstance(apiKey) {
             console.log(chalk.yellow('####################'));
         }
 
-        return result;
+        args[agentReturnKey] = result;
     }
 
     async function getDataFromAPIStream(options, messages, dictAdded) {

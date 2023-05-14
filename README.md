@@ -130,7 +130,7 @@ let aiFunc = await aiFunction({
     );
   },
   callbackEndFunction: () => {
-    console.log('Stream finished, final result:', streamResponse);
+    console.log('Stream finished, final result:', fullResponse);
   },
   ...
 })
