@@ -64,14 +64,25 @@ To install the `aiFunction` module, simply run the following command:
 npm install ai-function-helper-langchain
 ```
 
+You must have `langchain` installed to use this module. If you don't have it, you can install it with the following command:
+
+```bash
+npm install langchain
+```
+
+To use the WebBrowser for the agents you need install `axios` and `cheerio`:
+
+```bash
+npm install axios cheerio
+```
+
+
 ## Usage
 
 First, create an instance of the `aiFunction` with your OpenAI API key:
 
 ```javascript
-import {
-	createAiFunctionInstance
-} from '../src/aiFunction.js';
+import { createAiFunctionInstance } from 'ai-function-helper-langchain';
 const aiFunction = createAiFunctionInstance('your_api_key_here');
 ```
 
