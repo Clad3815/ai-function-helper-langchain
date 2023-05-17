@@ -299,6 +299,15 @@ export function createAiFunctionInstance(apiKey) {
     if (agentTask === "") {
       throw new Error("You must specify a valid agent task");
     }
+
+    // Allowed agent types: chat-zero-shot-react-description, plan-and-execute
+    if (
+      agentType !== "chat-zero-shot-react-description" &&
+      agentType !== "plan-and-execute"
+    ) {
+      throw new Error("You must specify a valid agent type");
+    }
+
     if (showDebug) {
       console.log(chalk.yellow("####################"));
       console.log(chalk.blue("Using agent: " + agentType));
@@ -328,19 +337,23 @@ export function createAiFunctionInstance(apiKey) {
         }
       }
     }
-
-    const executor = await initializeAgentExecutorWithOptions(
-      agentTools,
-      model,
-      {
+    let executor;
+    if (agentType === "plan-and-execute") {
+      try {
+        executor = PlanAndExecuteAgentExecutor.fromLLMAndTools({
+          llm: model,
+          tools: agentTools,
+        });
+      } catch (error) {
+        console.log(error);
+        return;
+      }
+    } else {
+      executor = await initializeAgentExecutorWithOptions(agentTools, model, {
         agentType: agentType,
         verbose: langchainVerbose,
-      }
-    );
-    // const executor = PlanAndExecuteAgentExecutor.fromLLMAndTools({
-    //     llm: model,
-    //     agentTools,
-    // });
+      });
+    }
     if (showDebug) {
       console.log(chalk.blue("Agent initialized: " + agentType));
     }

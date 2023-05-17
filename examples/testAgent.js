@@ -54,6 +54,7 @@ class DDG extends Tool {
     functionName: "make_dict",
     showDebug: true,
     agentArgs: {
+      // agentType: 'plan-and-execute', // https://js.langchain.com/docs/modules/agents/agents/plan_execute/
       agentTask: `Today we are the ${todayDate}. Who is the current president of the United States? Find his birthday and answer what his current age ? And what his current age raised to the second power?`,
       agentTools: [new DDG(), WebBrowserTool(), new Calculator()],
       agentReturnKey: "agentData",
