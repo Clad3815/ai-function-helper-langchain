@@ -202,14 +202,14 @@ function createAiFunctionInstance(apiKey) {
     let { showDebug = false, langchainVerbose = false } = options;
 
     let {
-      agent = null,
       agentTools = [],
+      agentTask = "",
       agentReturnKey = "customAgentData",
       callbackStartAgent = null,
       callbackEndAgent = null,
     } = agentData;
-
-    if (!agent) {
+    let agent = agentData.agent;
+    if (agent === null) {
       throw new Error("You must send a valid agent");
     }
 
@@ -240,7 +240,7 @@ function createAiFunctionInstance(apiKey) {
       callbackStartAgent();
     }
 
-    const result = await executor.call({ agentTask });
+    const result = await executor.call({ input: agentTask });
 
     if (callbackEndAgent) {
       callbackEndAgent();
