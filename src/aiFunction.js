@@ -1,35 +1,39 @@
-import chalk from "chalk";
-import { ChatOpenAI } from "langchain/chat_models/openai";
-import {
+const chalk = require("chalk");
+
+const { ChatOpenAI } = require("langchain/chat_models/openai");
+
+const {
   HumanChatMessage,
   AIChatMessage,
   SystemChatMessage,
-} from "langchain/schema";
+} = require("langchain/schema");
 
-import { WebBrowser } from "langchain/tools/webbrowser";
+const { WebBrowser } = require("langchain/tools/webbrowser");
 
-import { initializeAgentExecutorWithOptions } from "langchain/agents";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+const { initializeAgentExecutorWithOptions } = require("langchain/agents");
+const { OpenAIEmbeddings } = require("langchain/embeddings/openai");
 
-import { PlanAndExecuteAgentExecutor } from "langchain/experimental/plan_and_execute";
-import { ZeroShotAgent, AgentExecutor } from "langchain/agents";
+const {
+  PlanAndExecuteAgentExecutor,
+} = require("langchain/experimental/plan_and_execute");
+const { ZeroShotAgent, AgentExecutor } = require("langchain/agents");
 
-import { LLMChain } from "langchain/chains";
-import {
+const { LLMChain } = require("langchain/chains");
+const {
   ChatPromptTemplate,
   SystemMessagePromptTemplate,
   HumanMessagePromptTemplate,
-} from "langchain/prompts";
+} = require("langchain/prompts");
 
 let openaiApiKey;
 
 let lastLangchainModel = null;
 
-export function getLastModel() {
+function getLastModel() {
   return lastLangchainModel;
 }
 
-export function createAiFunctionInstance(apiKey) {
+function createAiFunctionInstance(apiKey) {
   if (!apiKey) {
     throw new Error("You must provide an OpenAI API key");
   }
@@ -198,46 +202,17 @@ export function createAiFunctionInstance(apiKey) {
     let { showDebug = false, langchainVerbose = false } = options;
 
     let {
-      agentTask = "",
+      agent = null,
       agentTools = [],
-      agentModel = "gpt-3.5-turbo",
       agentReturnKey = "customAgentData",
       callbackStartAgent = null,
       callbackEndAgent = null,
-      prefix = "",
-      suffix = "",
-      agentTemperature = 0,
     } = agentData;
 
-    if (agentTask === "") {
-      throw new Error("You must specify a valid agent task");
-    }
-    if (prefix === "" || suffix === "") {
-      throw new Error("You must specify a valid prefix and suffix");
+    if (!agent) {
+      throw new Error("You must send a valid agent");
     }
 
-    prefix = prefix + " You have access to the following tools:";
-
-    const prompt = ZeroShotAgent.createPrompt(agentTools, {
-      prefix: prefix,
-      suffix: suffix,
-    });
-
-    const chatPrompt = ChatPromptTemplate.fromPromptMessages([
-      new SystemMessagePromptTemplate(prompt),
-      HumanMessagePromptTemplate.fromTemplate(`{input}
-
-        This was your previous work (but I haven't seen any of it! I only see what you return as final answer):
-        {agent_scratchpad}`),
-    ]);
-
-    const chat = new ChatOpenAI({
-      apiKey: openaiApiKey,
-      modelName: agentModel,
-      temperature: agentTemperature,
-      verbose: langchainVerbose,
-    });
-    // Check if WebBrowser is in agentTools
     if (agentTools) {
       for (let i = 0; i < agentTools.length; i++) {
         if (agentTools[i] == WebBrowserTool()) {
@@ -253,26 +228,19 @@ export function createAiFunctionInstance(apiKey) {
         }
       }
     }
-    const llmChain = new LLMChain({
-      prompt: chatPrompt,
-      llm: chat,
-    });
 
-    const agent = new ZeroShotAgent({
-      llmChain,
-      allowedTools: agentTools.map((tool) => tool.name),
-    });
+    const tools = agentTools;
 
-    const executor = AgentExecutor.fromAgentAndTools({
+    const executor = new AgentExecutor({
       agent,
-      agentTools,
+      tools,
     });
 
     if (callbackStartAgent) {
       callbackStartAgent();
     }
 
-    const result = await executor.run(agentTask);
+    const result = await executor.call({ agentTask });
 
     if (callbackEndAgent) {
       callbackEndAgent();
@@ -300,7 +268,6 @@ export function createAiFunctionInstance(apiKey) {
       throw new Error("You must specify a valid agent task");
     }
 
-    // Allowed agent types: chat-zero-shot-react-description, plan-and-execute
     if (
       agentType !== "chat-zero-shot-react-description" &&
       agentType !== "plan-and-execute"
@@ -343,6 +310,7 @@ export function createAiFunctionInstance(apiKey) {
         executor = PlanAndExecuteAgentExecutor.fromLLMAndTools({
           llm: model,
           tools: agentTools,
+          verbose: langchainVerbose,
         });
       } catch (error) {
         console.log(error);
@@ -581,7 +549,7 @@ export function createAiFunctionInstance(apiKey) {
   return aiFunction;
 }
 
-export function WebBrowserTool() {
+function WebBrowserTool() {
   return "webbrowser";
 }
 
@@ -730,3 +698,9 @@ function unicodeEscape(str) {
     return "\\u" + ("000" + i.charCodeAt(0).toString(16)).slice(-4);
   });
 }
+
+module.exports = {
+  createAiFunctionInstance,
+  WebBrowserTool,
+  getLastModel,
+};
