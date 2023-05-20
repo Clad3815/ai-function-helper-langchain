@@ -212,42 +212,53 @@ function createAiFunctionInstance(apiKey) {
     if (agent === null) {
       throw new Error("You must send a valid agent");
     }
-
-    if (agentTools) {
-      for (let i = 0; i < agentTools.length; i++) {
-        if (agentTools[i] == WebBrowserTool()) {
-          const embeddings = new OpenAIEmbeddings({
-            apiKey: openaiApiKey,
-            verbose: langchainVerbose,
-          });
-          agentTools[i] = new WebBrowser({
-            model: chat,
-            embeddings: embeddings,
-            verbose: langchainVerbose,
-          });
+    let newArgs = JSON.parse(JSON.stringify(args));
+    try {
+      if (agentTools) {
+        for (let i = 0; i < agentTools.length; i++) {
+          if (agentTools[i] == WebBrowserTool()) {
+            const model = new ChatOpenAI({
+              apiKey: openaiApiKey,
+              temperature: 0,
+              verbose: langchainVerbose,
+              modelName: "gpt-3.5-turbo",
+            });
+            const embeddings = new OpenAIEmbeddings({
+              apiKey: openaiApiKey,
+              verbose: langchainVerbose,
+            });
+            agentTools[i] = new WebBrowser({
+              model: model,
+              embeddings: embeddings,
+              verbose: langchainVerbose,
+            });
+          }
         }
       }
+
+      const tools = agentTools;
+
+      const executor = new AgentExecutor({
+        agent,
+        tools,
+      });
+
+      if (callbackStartAgent) {
+        callbackStartAgent();
+      }
+
+      const result = await executor.call({ input: agentTask });
+
+      if (callbackEndAgent) {
+        callbackEndAgent();
+      }
+
+      newArgs[agentReturnKey] = result;
+      return newArgs;
+    } catch (error) {
+      console.log(error);
+      return args;
     }
-
-    const tools = agentTools;
-
-    const executor = new AgentExecutor({
-      agent,
-      tools,
-    });
-
-    if (callbackStartAgent) {
-      callbackStartAgent();
-    }
-
-    const result = await executor.call({ input: agentTask });
-
-    if (callbackEndAgent) {
-      callbackEndAgent();
-    }
-
-    args[agentReturnKey] = result;
-    return args;
   }
 
   async function getDataFromAgent(args, options, agentData) {
