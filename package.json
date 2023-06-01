@@ -17,6 +17,7 @@
     },
     "homepage": "https://github.com/Clad3815/ai-function-helper-langchain#readme",
     "dependencies": {
-        "chalk": "^4.1.2"
+        "chalk": "^4.1.2",
+        "js-yaml": "^4.1.0"
     }
 }
