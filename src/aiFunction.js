@@ -25,9 +25,8 @@ const {
   HumanMessagePromptTemplate,
 } = require("langchain/prompts");
 
-const yaml = require("js-yaml");
-
 let openaiApiKey;
+let openaiBasePath = null;
 
 let lastLangchainModel = null;
 
@@ -35,7 +34,7 @@ function getLastModel() {
   return lastLangchainModel;
 }
 
-function createAiFunctionInstance(apiKey) {
+function createAiFunctionInstance(apiKey, basePath = null) {
   if (!apiKey) {
     throw new Error("You must provide an OpenAI API key");
   }
@@ -43,6 +42,11 @@ function createAiFunctionInstance(apiKey) {
     throw new Error("You must provide an OpenAI API key as a string");
   } else {
     openaiApiKey = apiKey;
+    if (basePath) {
+      openaiBasePath = { basePath: basePath };
+    } else {
+      openaiBasePath = {};
+    }
   }
 
   async function aiFunction(options) {
@@ -61,7 +65,6 @@ function createAiFunctionInstance(apiKey) {
       current_date_time = new Date().toISOString(),
       agentArgs = {},
       customAgent = {},
-      outputFormat = "YAML",
     } = options;
     let funcReturnString = funcReturn;
     let argsString = "";
@@ -111,10 +114,10 @@ function createAiFunctionInstance(apiKey) {
       funcArgs = convertArgs(args);
     }
 
-    let isYAML = "";
-    let extraYAMLInfos = "";
+    let isJson = "";
+    let dictAdded = false;
     if (stream === true) {
-      isYAML = " without surrounding quotes ('\"`)";
+      isJson = " without surrounding quotes ('\"`)";
       if (
         funcReturn != "str" &&
         funcReturn != "int" &&
@@ -127,21 +130,22 @@ function createAiFunctionInstance(apiKey) {
       }
     } else {
       if (autoConvertReturn === true) {
-        isYAML = " in YAML format";
-        if (
-          funcReturn === "str" ||
-          funcReturn === "int" ||
-          funcReturn === "float" ||
-          funcReturn === "bool"
-        ) {
-          isYAML = " without surrounding quotes ('\"`)";
+        isJson =
+          " converted into a valid JSON string";
+        if (funcReturn === "str") {
+          funcReturnString = "dict[returnData:str]";
+          dictAdded = true;
+        } else if (funcReturn == "int") {
+          funcReturnString = "dict[returnData:int]";
+          dictAdded = true;
+        } else if (funcReturn == "float") {
+          funcReturnString = "dict[returnData:float]";
+          dictAdded = true;
+        } else if (funcReturn == "bool") {
+          funcReturnString = "dict[returnData:bool]";
+          dictAdded = true;
         }
       }
-    }
-
-    if (isYAML != "") {
-      extraYAMLInfos =
-        "In YAML formatting, always start a new line after colons, use a hyphen before each list item, use a space after each colon and comma, and ensure proper indentation: keys in a map must be indented equally, while values must be indented further. Every line should begin with a key and a colon. There must be a space after each colon, and if the value is a complex type like a list or another map, start it on a new line with proper indentation. For lists, each item should start with a hyphen and a space. Avoid unquoted strings that contain spaces or special characters, and don't forget the space after the comma in lists.";
     }
 
     for (const [key, value] of Object.entries(promptVars)) {
@@ -165,9 +169,7 @@ function createAiFunctionInstance(apiKey) {
             ${description}
             """
             \`\`\`
-            Only respond with your \`return\` value${isYAML}. Do not include any other explanatory text in your response.
-
-            ${extraYAMLInfos}
+            Only respond with your \`return\` value${isJson}. Do not include any other explanatory text in your response.
             ${blockHijackString}
             
             `
@@ -188,29 +190,17 @@ function createAiFunctionInstance(apiKey) {
       console.log(chalk.yellow("####################"));
       console.log(
         chalk.magenta("With arguments: ") +
-          chalk.green(messages[1]["content"].trim())
+        chalk.green(messages[1]["content"].trim())
       );
       console.log(chalk.yellow("####################"));
     }
 
-    if (outputFormat === "JSON") {
-      if (stream === true) {
-        return convertYamlToJson(returnStreamingData(options, messages));
-      } else {
-        if (useInternalStream)
-          return convertYamlToJson(
-            await getDataFromAPIStream(options, messages)
-          );
-        else return convertYamlToJson(await getDataFromAPI(options, messages));
-      }
+    if (stream === true) {
+      return returnStreamingData(options, messages);
     } else {
-      if (stream === true) {
-        return returnStreamingData(options, messages);
-      } else {
-        if (useInternalStream)
-          return await getDataFromAPIStream(options, messages);
-        else return await getDataFromAPI(options, messages);
-      }
+      if (useInternalStream)
+        return await getDataFromAPIStream(options, messages, dictAdded);
+      else return await getDataFromAPI(options, messages, dictAdded);
     }
   }
 
@@ -238,7 +228,7 @@ function createAiFunctionInstance(apiKey) {
               temperature: 0,
               verbose: langchainVerbose,
               modelName: "gpt-3.5-turbo",
-            });
+            }, openaiBasePath);
             const embeddings = new OpenAIEmbeddings({
               apiKey: openaiApiKey,
               verbose: langchainVerbose,
@@ -313,7 +303,7 @@ function createAiFunctionInstance(apiKey) {
       temperature: agentTemperature,
       verbose: langchainVerbose,
       modelName: agentModel,
-    });
+    }, openaiBasePath);
 
     // Check if WebBrowser is in agentTools
     if (agentTools) {
@@ -381,7 +371,7 @@ function createAiFunctionInstance(apiKey) {
     return args;
   }
 
-  async function getDataFromAPIStream(options, messages) {
+  async function getDataFromAPIStream(options, messages, dictAdded) {
     let {
       showDebug = false,
       temperature = 0.8,
@@ -411,7 +401,7 @@ function createAiFunctionInstance(apiKey) {
           },
         },
       ],
-    });
+    }, openaiBasePath);
     lastLangchainModel = apiCall;
 
     await apiCall.call([
@@ -420,7 +410,7 @@ function createAiFunctionInstance(apiKey) {
     ]);
 
     if (autoConvertReturn === true) {
-      return await parseAndFixData(answer, showDebug);
+      return await parseAndFixData(answer, showDebug, dictAdded);
     } else {
       if (showDebug) {
         console.log(chalk.yellow("####################"));
@@ -431,7 +421,7 @@ function createAiFunctionInstance(apiKey) {
     return answer;
   }
 
-  async function getDataFromAPI(options, messages) {
+  async function getDataFromAPI(options, messages, dictAdded) {
     let {
       showDebug = false,
       temperature = 0.8,
@@ -453,7 +443,7 @@ function createAiFunctionInstance(apiKey) {
       maxTokens: max_tokens,
       verbose: langchainVerbose,
       temperature: temperature,
-    });
+    }, openaiBasePath);
     lastLangchainModel = apiCall;
 
     const gptResponse = await apiCall.call([
@@ -463,7 +453,7 @@ function createAiFunctionInstance(apiKey) {
 
     let answer = gptResponse.text;
     if (autoConvertReturn === true) {
-      return await parseAndFixData(answer, showDebug);
+      return await parseAndFixData(answer, showDebug, dictAdded);
     } else {
       if (showDebug) {
         console.log(chalk.yellow("####################"));
@@ -491,8 +481,8 @@ function createAiFunctionInstance(apiKey) {
     let resolveStream;
     const streamPromise = !returnAsynchronousStream
       ? new Promise((resolve) => {
-          resolveStream = resolve;
-        })
+        resolveStream = resolve;
+      })
       : null;
 
     const apiCall = new ChatOpenAI({
@@ -520,7 +510,7 @@ function createAiFunctionInstance(apiKey) {
           },
         },
       ],
-    });
+    }, openaiBasePath);
     lastLangchainModel = apiCall;
 
     apiCall.call([
@@ -530,37 +520,43 @@ function createAiFunctionInstance(apiKey) {
     if (!returnAsynchronousStream) await streamPromise;
   }
 
-  async function parseAndFixData(answer, showDebug) {
+  async function parseAndFixData(answer, showDebug, dictAdded) {
     answer = answer.replace(
-      /^(```(?:python|yaml|YAML)?|`['"]?|['"]?)|(```|['"`]?)$/g,
+      /^(```(?:python|json)?|`['"]?|['"]?)|(```|['"`]?)$/g,
       ""
     );
 
-    if (isValidYAML(answer)) {
+    if (answer.startsWith("return json.dumps(") && answer.endsWith(")")) {
+      answer = answer.substring(18, answer.length - 1);
+    }
+    if (isValidJSON(answer)) {
       if (showDebug) {
         console.log(chalk.green("####################"));
-        console.log(chalk.green("Valid YAML, returning it: " + answer));
+        console.log(chalk.green("Valid JSON, returning it: " + answer));
         console.log(chalk.green("####################"));
       }
-      return yaml.load(answer);
+      if (dictAdded) {
+        let parsedAnswer = parseJson(answer);
+        return parsedAnswer.returnData;
+      } else {
+        return parseJson(answer);
+      }
     } else {
       if (showDebug) {
         console.log(chalk.yellow("####################"));
-        console.log(chalk.red("Invalid YAML, trying to fix it: " + answer));
+        console.log(chalk.red("Invalid JSON, trying to fix it: " + answer));
       }
-      let fixedAnswer = await fixBadYamlFormat(answer, showDebug);
+      let fixedAnswer = await fixBadJsonFormat(answer.trim(), showDebug);
       if (fixedAnswer !== "") {
-        if (isValidYAML(answer)) {
-          return fixedAnswer;
+        if (dictAdded) {
+          let parsedAnswer = parseJson(fixedAnswer);
+          return parsedAnswer.returnData;
         } else {
-          if (showDebug) {
-            console.log(chalk.red("Could not fix YAML"));
-            console.log(chalk.yellow("####################"));
-          }
+          return parseJson(fixedAnswer);
         }
       } else {
         if (showDebug) {
-          console.log(chalk.red("Could not fix YAML"));
+          console.log(chalk.red("Could not fix JSON"));
           console.log(chalk.yellow("####################"));
         }
       }
@@ -574,42 +570,58 @@ function WebBrowserTool() {
   return "webbrowser";
 }
 
-function convertYamlToJson(yamlString) {
-  let data = yaml.load(yamlString);
-  return JSON.stringify(data);
+function fixJsonString(pythonString) {
+  return pythonString
+    .trim()
+    .replace(/(^|[^\\])\\\\"/g, '$1\\\\"') // Double backslashes before escaped quotes in values
+    .replace(/(^|[^\\])\\"/g, '$1"') // Fix incorrect escaped quotes around key names
+    .replace(/(^|[^\\w])'($|[^\\w])/g, '$1"$2')
+    .replace(/\\"/g, "'")
+    .replace(/[”“]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/(\w)"(\w)/g, '$1\\"$2')
+    .replace(/\\'/g, "'")
+    .replace(/None/g, "null")
+    .replace(/True/g, "true")
+    .replace(/False/g, "false")
+    .replace(/^`+|`+$/g, "")
+    .replace(/^'+|'+$/g, "")
+    .replace(/(^\{.*),\}$/g, "$1}")
+    .replace(/(?:\r\n|\r|\n)/g, "\\n")
+    .replace(/\.\}$/g, "}");
 }
 
-function isValidYAML(str) {
-  try {
-    yaml.load(str);
-  } catch (err) {
-    console.log(err);
-    return false;
+async function fixBadJsonFormat(jsonString, showDebug = false) {
+  const tryFixJsonString = fixJsonString(jsonString);
+  if (tryFixJsonString !== jsonString) {
+    if (isValidJSON(tryFixJsonString)) {
+      if (showDebug) {
+        console.log(
+          chalk.green("Fixed JSON (by function): " + tryFixJsonString)
+        );
+        console.log(chalk.yellow("####################"));
+      }
+      return tryFixJsonString;
+    }
   }
-  return true;
-}
-
-async function fixBadYamlFormat(jsonString, showDebug = false) {
   const apiCall = new ChatOpenAI({
     apiKey: openaiApiKey,
     modelName: "gpt-3.5-turbo",
     temperature: 0,
-  });
+  }, openaiBasePath);
 
   const gptResponse = apiCall.call([
     new HumanChatMessage(
-      "Your task is to fix a YAML string, answer just with the fixed string or the same string if it's already valid. In YAML formatting, always start a new line after colons, use a hyphen before each list item, use a space after each colon and comma, and ensure proper indentation: keys in a map must be indented equally, while values must be indented further. Every line should begin with a key and a colon. There must be a space after each colon, and if the value is a complex type like a list or another map, start it on a new line with proper indentation. For lists, each item should start with a hyphen and a space. Avoid unquoted strings that contain spaces or special characters, and don't forget the space after the comma in lists."
+      "Your task is to fix a JSON string, answer just with the fixed string or the same string if it's already valid. In JSON, all keys and strings must be enclosed in double quotes. Additionally, boolean values must be in lowercase. You must fix also any escaped characters badly formatted."
     ),
     new HumanChatMessage(jsonString),
   ]);
 
-  console.log(gptResponse);
-
   let answer = gptResponse.text;
 
-  if (isValidYAML(answer)) {
+  if (isValidJSON(answer)) {
     if (showDebug) {
-      console.log(chalk.green("Fixed YAML (by AI): " + answer));
+      console.log(chalk.green("Fixed JSON (by AI): " + answer));
       console.log(chalk.yellow("####################"));
     }
     return answer;
@@ -691,6 +703,17 @@ function isValidJSON(jsonString) {
     return false;
   }
   return true;
+}
+
+function parseJson(jsonString) {
+  // Use unicode escape to avoid invalid character errors
+  return JSON.parse(unicodeEscape(jsonString));
+}
+
+function unicodeEscape(str) {
+  return str.replace(/[\u00A0-\u9999<>\&]/g, function (i) {
+    return "\\u" + ("000" + i.charCodeAt(0).toString(16)).slice(-4);
+  });
 }
 
 module.exports = {
