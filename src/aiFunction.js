@@ -161,6 +161,7 @@ function createAiFunctionInstance(apiKey, basePath = null) {
     const messages = [
       {
         content: `
+            KnowledgeCutoff: 2021-09-01
             Current time: ${current_date_time}
             You are to assume the role of the following Python function:
             \`\`\`
@@ -224,13 +225,13 @@ function createAiFunctionInstance(apiKey, basePath = null) {
         for (let i = 0; i < agentTools.length; i++) {
           if (agentTools[i] == WebBrowserTool()) {
             const model = new ChatOpenAI({
-              apiKey: openaiApiKey,
+              openAIApiKey: openaiApiKey,
               temperature: 0,
               verbose: langchainVerbose,
               modelName: "gpt-3.5-turbo",
             }, openaiBasePath);
             const embeddings = new OpenAIEmbeddings({
-              apiKey: openaiApiKey,
+              openAIApiKey: openaiApiKey,
               verbose: langchainVerbose,
             });
             agentTools[i] = new WebBrowser({
@@ -299,7 +300,7 @@ function createAiFunctionInstance(apiKey, basePath = null) {
     }
 
     const model = new ChatOpenAI({
-      apiKey: openaiApiKey,
+      openAIApiKey: openaiApiKey,
       temperature: agentTemperature,
       verbose: langchainVerbose,
       modelName: agentModel,
@@ -310,7 +311,7 @@ function createAiFunctionInstance(apiKey, basePath = null) {
       for (let i = 0; i < agentTools.length; i++) {
         if (agentTools[i] == WebBrowserTool()) {
           const embeddings = new OpenAIEmbeddings({
-            apiKey: openaiApiKey,
+            openAIApiKey: openaiApiKey,
             verbose: langchainVerbose,
           });
           agentTools[i] = new WebBrowser({
@@ -385,7 +386,7 @@ function createAiFunctionInstance(apiKey, basePath = null) {
     } = options;
     let answer = "";
     const apiCall = new ChatOpenAI({
-      apiKey: openaiApiKey,
+      openAIApiKey: openaiApiKey,
       modelName: model,
       frequencyPenalty: frequency_penalty,
       presencePenalty: presence_penalty,
@@ -435,7 +436,7 @@ function createAiFunctionInstance(apiKey, basePath = null) {
     } = options;
 
     const apiCall = new ChatOpenAI({
-      apiKey: openaiApiKey,
+      openAIApiKey: openaiApiKey,
       modelName: model,
       frequencyPenalty: frequency_penalty,
       presencePenalty: presence_penalty,
@@ -486,7 +487,7 @@ function createAiFunctionInstance(apiKey, basePath = null) {
       : null;
 
     const apiCall = new ChatOpenAI({
-      apiKey: openaiApiKey,
+      openAIApiKey: openaiApiKey,
       modelName: model,
       frequencyPenalty: frequency_penalty,
       presencePenalty: presence_penalty,
@@ -605,7 +606,7 @@ async function fixBadJsonFormat(jsonString, showDebug = false) {
     }
   }
   const apiCall = new ChatOpenAI({
-    apiKey: openaiApiKey,
+    openAIApiKey: openaiApiKey,
     modelName: "gpt-3.5-turbo",
     temperature: 0,
   }, openaiBasePath);
