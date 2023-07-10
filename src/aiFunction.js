@@ -3,9 +3,9 @@ const chalk = require("chalk");
 const { ChatOpenAI } = require("langchain/chat_models/openai");
 
 const {
-  HumanChatMessage,
-  AIChatMessage,
-  SystemChatMessage,
+  HumanMessage,
+  AIMessage,
+  SystemMessage,
 } = require("langchain/schema");
 
 const { WebBrowser } = require("langchain/tools/webbrowser");
@@ -406,8 +406,8 @@ function createAiFunctionInstance(apiKey, basePath = null) {
     lastLangchainModel = apiCall;
 
     await apiCall.call([
-      new HumanChatMessage(messages[0]["content"]),
-      new HumanChatMessage(messages[1]["content"]),
+      new SystemMessage(messages[0]["content"]),
+      new HumanMessage(messages[1]["content"]),
     ]);
 
     if (autoConvertReturn === true) {
@@ -448,8 +448,8 @@ function createAiFunctionInstance(apiKey, basePath = null) {
     lastLangchainModel = apiCall;
 
     const gptResponse = await apiCall.call([
-      new HumanChatMessage(messages[0]["content"]),
-      new HumanChatMessage(messages[1]["content"]),
+      new SystemMessage(messages[0]["content"]),
+      new HumanMessage(messages[1]["content"]),
     ]);
 
     let answer = gptResponse.text;
@@ -515,8 +515,8 @@ function createAiFunctionInstance(apiKey, basePath = null) {
     lastLangchainModel = apiCall;
 
     apiCall.call([
-      new HumanChatMessage(messages[0]["content"]),
-      new HumanChatMessage(messages[1]["content"]),
+      new SystemMessage(messages[0]["content"]),
+      new HumanMessage(messages[1]["content"]),
     ]);
     if (!returnAsynchronousStream) await streamPromise;
   }
@@ -612,10 +612,10 @@ async function fixBadJsonFormat(jsonString, showDebug = false) {
   }, openaiBasePath);
 
   const gptResponse = apiCall.call([
-    new HumanChatMessage(
+    new SystemMessage(
       "Your task is to fix a JSON string, answer just with the fixed string or the same string if it's already valid. In JSON, all keys and strings must be enclosed in double quotes. Additionally, boolean values must be in lowercase. You must fix also any escaped characters badly formatted."
     ),
-    new HumanChatMessage(jsonString),
+    new HumanMessage(jsonString),
   ]);
 
   let answer = gptResponse.text;
