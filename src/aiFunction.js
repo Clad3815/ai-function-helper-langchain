@@ -162,7 +162,7 @@ function createAiFunctionInstance(apiKey, basePath = null) {
       langchainVerbose = false,
       top_p = null,
       max_tokens = null,
-      retries = 0,
+      retries = 3,
     } = options;
 
     const apiCall = new ChatOpenAI({
@@ -302,6 +302,9 @@ function generateZodSchema(schemaObject) {
         break;
       case "number":
         zodField = z.number();
+        break;
+      case "boolean":
+        zodField = z.boolean();
         break;
       case "array":
         if (typeof field.items === 'string') {
