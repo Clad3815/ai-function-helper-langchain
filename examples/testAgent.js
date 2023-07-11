@@ -62,7 +62,7 @@ class DDG extends Tool {
         console.log("Agent started");
       },
       callbackEndAgent: () => {
-        console.log("Agent finished");
+        console.log("Agent finished"); 
       },
     },
     langchainVerbose: true,

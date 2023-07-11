@@ -54,11 +54,20 @@ const aiFunction = createAiFunctionInstance(process.env.OPENAI_API_KEY);
         functionName: 'moderate_messages',
         args: messages,
         description: 'Analyze and moderate a list of messages. Return a list of messages with the "content" field updated with bad words changed with "*" to indicate whether the message was flagged for moderation.',
-        funcReturn: 'list[dict[id:int, content:str, flagged:bool]]]]',
+        funcReturn: {
+            moderatedMessages: {
+                type: "array",
+                items: {
+                    id: { type: "number" },
+                    content: { type: "string" },
+                    flagged: { type: "boolean" }
+                }
+            }
+        }
     };
 
     aiFunction(options).then(moderatedMessages => {
-        console.log(moderatedMessages);
+        console.log(moderatedMessages.moderatedMessages);
     });
 
     let aiData;
@@ -70,11 +79,15 @@ const aiFunction = createAiFunctionInstance(process.env.OPENAI_API_KEY);
         },
         functionName: "translate_text",
         description: "Translate text from one language to another. Use the to arguments to specify destination language. The text is from a game user interface. Return a string with the translated text",
-        funcReturn: "str",
+        funcReturn: {
+            translated_text: {
+                type: "string"
+            }
+        },
         showDebug: false,
-        temperature: 0.7,
+        temperature: 0,
     });
-    console.log(aiData);
+    console.log(aiData.translated_text);
 
     aiData = await aiFunction({
         args: {
@@ -82,10 +95,14 @@ const aiFunction = createAiFunctionInstance(process.env.OPENAI_API_KEY);
         },
         functionName: "shorten_sentence",
         description: "Rewrite the sentence to a minimum of words without breaking the context or important data. If the sentence can't be shorten, it will return the same sentence.",
-        funcReturn: "str",
-        temperature: 1,
+        funcReturn: {
+            shortened_sentence: {
+                type: "string"
+            }
+        },
+        temperature: 0,
     });
-    console.log(aiData);
+    console.log(aiData.shortened_sentence);
 
 
 })();

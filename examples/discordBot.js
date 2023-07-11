@@ -73,7 +73,11 @@ const options = {
 		messageToAnswer: messageToAnswer
 	},
 	description,
-	funcReturn: 'str',
+	funcReturn: {
+		botAnswer: {
+			type: 'string'
+		}
+	},
 	functionName: 'generate_response',
 	showDebug: true,
 };
@@ -81,7 +85,7 @@ const options = {
 // Use the aiFunction to generate a response to the last message
 aiFunction(options)
 	.then(response => {
-		console.log('AI response:', response);
+		console.log('AI response:', response.botAnswer);
 	})
 	.catch(err => {
 		console.error('An error occurred:', err);
