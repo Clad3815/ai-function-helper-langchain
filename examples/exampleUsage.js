@@ -19,11 +19,20 @@ const aiFunction = createAiFunctionInstance(process.env.OPENAI_API_KEY);
             num_questions: 1
         },
         description: 'Generate N quiz questions with the topic and the difficulty given based on all your knowledge. Return a list of questions and 4 possible answers + the correct answer.',
-        funcReturn: 'list[question:str, answers:list[str], correct_answer:str]',
+        funcReturn: {
+            quizQuestions: {
+                type: "array",
+                items: {
+                    question: { type: "string" },
+                    answers: { type: "array", items: "string" },
+                    correct_answer: { type: "string" }
+                }
+            }
+        }
     };
 
     const quiz = await aiFunction(options);
-    console.log(quiz);
+    console.log(quiz.quizQuestions);
     options = {
         functionName: 'suggest_gifts',
         args: {
@@ -31,11 +40,16 @@ const aiFunction = createAiFunctionInstance(process.env.OPENAI_API_KEY);
             interests: 'travel, fashion'
         },
         description: 'Suggest gift ideas for someone who loves the given hobbies and interests.',
-        funcReturn: 'list[str]',
+        funcReturn: {
+            giftIdeas: {
+                type: "array",
+                items: "string[]"
+            }
+        }
     };
 
     const giftIdeas = await aiFunction(options);
-    console.log(giftIdeas);
+    console.log(giftIdeas.giftIdeas);
     const messages = [{
             id: 1,
             content: 'Hello, world!'
