@@ -140,25 +140,42 @@ This option provides a description of the function's purpose. It provides contex
 
 ### funcReturn
 
-
 The `funcReturn` option is used to define the expected return type of the custom function. It is expressed in a JavaScript object-like format, and it can be used to specify complex data structures like arrays and objects. 
 
 From version 0.2.0, `funcReturn` accepts both the custom schema format and Zod schema format.
 
-For instance:
+For instance, let's consider an example where the function returns a detailed human profile:
 
 Custom schema format:
 
 ```javascript
 funcReturn: {
-  questionList: {
-    type: "array",
-    items: {
-      question: { type: "string" },
-      answers: { type: "array", items: "string[]" },
-      correct_answer: { type: "string" },
-    },
-  },
+	name: { type: "string" },
+	surname: { type: "string" },
+	age: { type: "number" },
+	birthplace: { type: "string" },
+	appearance: { type: "string" },
+	shortBio: { type: "string" },
+	university: { type: "string", optional: true },
+	gender: { type: "string" },
+	interests: { type: "string[]" },
+	favoritesPlaces: {
+		type: "object",
+		array: true,
+		schema: {
+			name: { type: "string" },
+			country: { type: "string" },
+			bestTimes: { type: "string", array: true }
+		}
+	},
+	nameAndAge: {
+		type: "object",
+		schema: {
+			name: { type: "string" },
+			age: { type: "number" }
+		}
+	},
+	birthDate: { type: ["date", "string"] },
 }
 ```
 
@@ -166,36 +183,28 @@ Equivalent Zod schema format:
 
 ```javascript
 funcReturn: z.object({
-  questionList: z.array(
-    z.object({
-      question: z.string(),
-      answers: z.array(z.string()),
-      correct_answer: z.string(),
-    })
-  ),
-});
+	name: z.string(),
+	surname: z.string(),
+	age: z.number(),
+	birthplace: z.string(),
+	appearance: z.string(),
+	shortBio: z.string(),
+	university: z.string().optional(),
+	gender: z.string(),
+	interests: z.string().array(),
+	favoritesPlaces: z.array(z.object({ name: z.string(), country: z.string(), bestTimes: z.array(z.string()) })),
+	nameAndAge: z.object({ name: z.string() }).and(z.object({ age: z.number() })),
+	birthDate: z.date().or(z.string()),
+})
 ```
 
-These `funcReturn` specifications translate into the following output format:
+In this case, the output is an object with:
 
-```javascript
-{
-  "questionList": [
-    {
-      question: "sample question",
-      answers: ["answer 1", "answer 2", "answer 3"],
-      correct_answer: "correct answer",
-    },
-    // Additional entries...
-  ],
-}
-```
-
-In this case, the output is a list of objects, where each object represents a question and its associated answers. Each object contains:
-
-- `question`: a string representing the question.
-- `answers`: an array of strings where each string represents a potential answer to the question.
-- `correct_answer`: a string representing the correct answer to the question.
+- `name`, `surname`, `age`, `birthplace`, `appearance`, `shortBio`, `university`, `gender`: strings representing the various aspects of a human.
+- `interests`: an array of strings representing the interests of the human.
+- `favoritesPlaces`: an array of objects where each object represents a favorite place with its name, country, and the best times to visit.
+- `nameAndAge`: an object containing the name and age.
+- `birthDate`: a date or string representing the birth date of the human.
 
 You can choose either format based on your preference. If you're already familiar with Zod, using the Zod schema format might be more convenient. If you prefer a more straightforward approach, you might find the custom schema format easier to use.
 
@@ -265,40 +274,6 @@ This sets the number of times to retry the AI model if it fails to generate a re
 
 ## Using Objects in funcReturn
 
-The `object` keyword can also be used in `funcReturn` to specify that the function should return an object. An object is a collection of key-value pairs.
-
-Here is an example:
-
-```javascript
-funcReturn: {
-  person: {
-    type: "object",
-    items: {
-      name: { type: "string" },
-      age: { type: "number" },
-      skills: { type: "array", items: "string[]" },
-    },
-  },
-}
-```
-
-This `funcReturn` specification translates into the following output format:
-
-```javascript
-{
-  "person": {
-    "name": "sample name",
-    "age": 25,
-    "skills": ["skill1", "skill2", "skill3"]
-  }
-}
-```
-
-In this case, the output is an object with:
-
-- `name`: a string representing the person's name.
-- `age`: a number representing the person's age.
-- `skills`: an array of strings where each string represents a skill that the person has.
 
 The `funcReturn` option is a powerful tool that allows you to customize the structure of the output you get from the `aiFunction`. By using a JavaScript object-like syntax, you can define complex data structures to fit your specific needs.
 
@@ -306,26 +281,15 @@ You can also build complex output very easily by combining arrays and objects.
 
 ```javascript
 funcReturn: {
-  categories: {
-    type: "array",
-    items: {
-      category: { type: "string" },
-      items: {
-        type: "array",
-        items: {
-          name: { type: "string" },
-          attributes: {
-            type: "object",
-            items: {
-              color: { type: "string" },
-              size: { type: "number" },
-              tags: { type: "array", items: "string[]" },
-            },
-          },
-        },
-      },
-    },
-  },
+	favoritesPlaces: {
+		type: "object",
+		array: true,
+		schema: {
+			name: { type: "string" },
+			country: { type: "string" },
+			bestTimes: { type: "string", array: true }
+		}
+	},
 }
 ```
 
@@ -333,36 +297,23 @@ This `funcReturn` specification translates into the following output format:
 
 ```javascript
 {
-  "categories" : 
+  "favoritesPlaces" : 
   [
     {
-      "category": "Electronics",
-      "items": [
-        {
-          "name": "Smartphone",
-          "attributes": {
-            "color": "Black",
-            "size": 6,
-            "tags": ["mobile", "gadget", "touchscreen"]
-          }
-        },
-        // Additional items...
-      ]
+      "name": "Central Park",
+      "country": "USA",
+      "bestTimes": ["9am", "1pm", "5pm"]
     },
-    // Additional categories...
+    // Additional places...
   ]
 }
 ```
 
-In this example, the output is a list of objects, where each object represents a category and contains:
+In this case, the output is a list of objects, where each object represents a favorite place and contains:
 
-- `category`: a string representing the category name.
-- `items`: a list of objects where each object represents an item in the category and contains:
-  - `name`: a string representing the item's name.
-  - `attributes`: an object containing the item's attributes, such as:
-    - `color`: a string representing the item's color.
-    - `size`: a number representing the item's size.
-    - `tags`: a list of strings where each string represents a tag associated with the item.
+- `name`: a string representing the place's name.
+- `country`: a string representing the country where the place is located.
+- `bestTimes`: an array of strings representing the best times to visit the place.
 
 This complex example demonstrates how you can use `funcReturn` to define deeply nested structures that can accommodate a wide variety of data types and relationships.
 ## Examples
@@ -384,8 +335,8 @@ const options = {
   description: 'Generate N quiz  questions with the topic and the difficulty given. Return a list of questions and 4 possible answers + the correct answer.',
   funcReturn: {
     quizList: {
-      type: "array",
-      items: {
+      type: "object[]",
+      schema: {
         question: { type: "string" },
         answers: { type: "string[]" },
         correct_answer: { type: "string" },
@@ -439,7 +390,7 @@ const options = {
   description: 'Suggest gift ideas for someone who loves the given hobbies and interests.',
   funcReturn: { 
     suggestions: {
-      type: "array", items: "string[]"
+      type: "string[]"
     }
   },
 };
@@ -464,8 +415,8 @@ const options = {
         description: 'Analyze and moderate a list of messages. Return a list of messages with the "content" field updated with bad words changed with "*" to indicate whether the message was flagged for moderation.',
         funcReturn: {
           moderatedMessages: {
-            type: "array",
-            items: {
+              type: "object[]",
+              schema: {
               id: { type: "number" },
               content: { type: "string" },
               flagged: { type: "boolean" },
