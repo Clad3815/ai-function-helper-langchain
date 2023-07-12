@@ -73,8 +73,8 @@ async function test1(model) {
         description: 'Generates n examples of fake data representing people, each with a name and an age.',
         funcReturn: {
             peoples: {
-                type: "array",
-                items: {
+                type: "object[]",
+                schema: {
                     name: { type: "string" },
                     age: { type: "number" }
                 }
@@ -113,20 +113,15 @@ async function test2(model) {
         functionName: 'random_string_generator',
         description: 'Generates a strong random string of given length with or without special characters. Just put random characters in a string and it will generate the desired output. ',
         funcReturn: {
-            string: {
-                type: "object",
-                items: {
-                    string: { type: "string" },
-                    length: { type: "number" },
-                }
-            }
+            string: { type: "string" },
+            length: { type: "number" },
         },
         temperature: 1,
         model: model,
         showDebug: showDebug,
     });
 
-    const result = aiData.string;
+    const result = aiData;
 
     console.log(`Output: ${result.string} (${result.string.length}) (AI: ${result.length}) | Expected length: ${randomLength} | Special characters: ${specialChar}`);
 
@@ -138,15 +133,19 @@ async function test2(model) {
 
 // Ai function test 4
 async function test4(model) {
-    const result = await aiFunction({
+    const aiData = await aiFunction({
         args: 10,
         functionName: 'get_nth_prime_number',
         description: 'Finds and returns the nth prime number.',
-        funcReturn: { type: "number" },
+        funcReturn: {
+            nthPrimeNumber: { type: "number" }
+        },
         temperature: 0,
         model: model,
         showDebug: showDebug,
     });
+
+    const result = aiData.nthPrimeNumber;
 
     console.log(`Output: ${result}`);
 
@@ -199,8 +198,7 @@ async function test6(model) {
         description: 'Finds and returns a list of missing numbers in a given sorted list.',
         funcReturn: {
             missingNumbers: {
-                type: "array",
-                items: "number[]"
+                type: "number[]"
             }
         },
         temperature: 0,
