@@ -280,72 +280,67 @@ function getType(value) {
 
 const isZodSchema = (schemaObject) => schemaObject && schemaObject._def;
 
-const isPrimitiveType = (type) => ["string", "number", "boolean"].includes(type);
 
-const createZodField = (type) => {
-  switch (type) {
-    case "string":
-      return z.string();
-    case "number":
-      return z.number();
-    case "boolean":
-      return z.boolean();
-    default:
-      throw new Error(`Unsupported type: ${type}`);
-  }
-};
+function generateZodSchema(customSchema) {
 
-const handleArrayField = (field) => {
-  const itemType = typeof field.items === 'string' ? field.items.replace('[]', '') : field.items;
-  const zodField = z.array(isPrimitiveType(itemType) ? createZodField(itemType) : generateZodSchema(itemType));
-  return field.describe ? zodField.describe(field.describe) : zodField;
-};
+  if (isZodSchema(customSchema)) return customSchema;
 
-const handleObjectField = (field) => generateZodSchema(field.items);
+  let zodSchema = {};
 
-const enhanceField = (field, zodField) => {
-  if (field.describe) {
-    zodField = zodField.describe(field.describe);
-  }
-  if (field.optional) {
-    zodField = zodField.optional();
-  }
-  return zodField;
-};
+  for (let key in customSchema) {
+    let field = customSchema[key];
+    let isArray = field.array || (typeof field.type === "string" && field.type.endsWith("[]"));
+    let fieldType = isArray ? field.type.replace("[]", "") : field.type;
 
-function generateZodSchema(schemaObject) {
-  if (isZodSchema(schemaObject)) {
-    return schemaObject;
-  }
-
-  const zodSchema = {};
-
-  for (let key in schemaObject) {
-    let field = schemaObject[key];
-    let type = field.type;
-    let isArray = false;
-
-    if (type && type.endsWith('[]')) {
-      isArray = true;
-      type = type.replace('[]', '');
-    }
-
-    let zodField;
-    if (isPrimitiveType(type)) {
-      zodField = createZodField(type);
-    } else if (type === "array") {
-      zodField = handleArrayField(field);
-    } else if (type === "object") {
-      zodField = handleObjectField(field);
+    if (Array.isArray(fieldType)) {
+      let multiTypeSchema = fieldType.map((type) => {
+        let isArrayType = type.endsWith("[]");
+        type = isArrayType ? type.replace("[]", "") : type;
+        switch (type) {
+          case "string":
+            return isArrayType ? z.array(z.string()) : z.string();
+          case "number":
+            return isArrayType ? z.array(z.number()) : z.number();
+          case "date":
+            return isArrayType ? z.array(z.date()) : z.date();
+          case "boolean":
+            return isArrayType ? z.array(z.boolean()) : z.boolean();
+          default:
+            return z.string();
+        }
+      });
+      zodSchema[key] = z.union(multiTypeSchema);
     } else {
-      throw new Error(`Unsupported type: ${type}`);
+      switch (fieldType) {
+        case "string":
+          zodSchema[key] = isArray ? z.array(z.string()) : z.string();
+          break;
+        case "number":
+          zodSchema[key] = isArray ? z.array(z.number()) : z.number();
+          break;
+        case "date":
+          zodSchema[key] = isArray ? z.array(z.date()) : z.date();
+          break;
+        case "boolean":
+          zodSchema[key] = isArray ? z.array(z.boolean()) : z.boolean();
+          break;
+        case "object":
+          if (isArray) {
+            zodSchema[key] = z.array(generateZodSchema(field.schema));
+          } else {
+            zodSchema[key] = generateZodSchema(field.schema);
+          }
+          break;
+      }
     }
 
-    if (isArray) {
-      zodField = z.array(zodField);
+    if (field.description || field.describe) {
+      zodSchema[key] = zodSchema[key].describe(field.description || field.describe);
     }
 
-    zodSchema[key] = enhanceField(field, zodField);
+    if (field.optional) {
+      zodSchema[key] = zodSchema[key].optional();
+    }
   }
 
   return z.object(zodSchema);
