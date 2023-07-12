@@ -7,13 +7,27 @@ Welcome to the AI Function Module, a powerful tool for integrating the capabilit
 
 - [AI Function Module (Langchain Ready)](#ai-function-module-langchain-ready)
   - [Table of Contents](#table-of-contents)
-  - [Why using this script instead of the normal OpenAI API?](#why-using-this-script-instead-of-the-normal-openai-api)
+- [aiFunction Helper for Langchain](#aifunction-helper-for-langchain)
+  - [Why use this script instead of the normal OpenAI API?](#why-use-this-script-instead-of-the-normal-openai-api)
   - [Installation](#installation)
   - [Usage](#usage)
   - [aiFunction(options)](#aifunctionoptions)
-    - [promptVars](#promptvars)
+    - [args](#args)
+    - [description](#description)
     - [funcReturn](#funcreturn)
-    - [Using Objects in funcReturn](#using-objects-in-funcreturn)
+    - [functionName (optional)](#functionname-optional)
+    - [promptVars (optional)](#promptvars-optional)
+    - [showDebug (optional)](#showdebug-optional)
+    - [current\_date\_time (optional)](#current_date_time-optional)
+    - [temperature (optional)](#temperature-optional)
+    - [frequency\_penalty (optional)](#frequency_penalty-optional)
+    - [presence\_penalty (optional)](#presence_penalty-optional)
+    - [model (optional)](#model-optional)
+    - [max\_tokens (optional)](#max_tokens-optional)
+    - [top\_p (optional)](#top_p-optional)
+    - [blockHijack (optional)](#blockhijack-optional)
+    - [retries (optional)](#retries-optional)
+  - [Using Objects in funcReturn](#using-objects-in-funcreturn)
   - [Examples](#examples)
   - [Example Usage](#example-usage)
     - [1. Generate a quiz](#1-generate-a-quiz)
@@ -33,7 +47,11 @@ Welcome to the AI Function Module, a powerful tool for integrating the capabilit
 - [Contributing](#contributing)
 
 
-## Why using this script instead of the normal OpenAI API?
+# aiFunction Helper for Langchain
+
+This module utilizes OpenAI Functions to yield outputs that match a specified format for any provided prompt. It transforms an input schema into an OpenAI function, which is then invoked by OpenAI to return a response in the correct format.
+
+## Why use this script instead of the normal OpenAI API?
 
 While the OpenAI API is powerful and versatile, it can sometimes be challenging to get the desired response format, especially when integrating the output directly into other functions within your application. Crafting the perfect prompt might require multiple iterations, and even then, the returned response may need additional processing.
 
@@ -50,8 +68,6 @@ The `aiFunction` script is designed to simplify this process and provide a more 
 5. **Better data and prompt understanding**: `aiFunction` helps the AI model to better understand the data and the prompt by providing a clear separation between them. This clear distinction allows the AI to better focus on the intended task and reduces the risk of confusion when processing data inside the prompt.
 
 In summary, the `aiFunction` script offers a more efficient and convenient way of interacting with the OpenAI API, enabling you to focus on integrating AI-generated content into your application without worrying about prompt crafting, response formatting, and security concerns.
-
-
 
 ## Installation
 
@@ -88,44 +104,42 @@ Now you can use the `aiFunction` without passing the API key every time.
 
 ## aiFunction(options)
 
-The main function that takes a set of options as an input and returns the output from the AI model.
+The `aiFunction` is the core function of this module and is designed to simplify the interaction with OpenAI's GPT models. It takes a set of options as an input and returns the output from the AI model.
 
-- options: An object containing the following keys:
-  - `args`: The arguments to be passed to the custom function. Can be a string, number, list, dictionary, or a combination of these, the function will auto manage them.
-  - `description`: A description of the function's purpose.
-  - `funcReturn`: The expected return type of the custom function. Check the [funcReturn](#funcreturn) section for more details.
-  - `functionName`: (optional): The name of the custom Python function to use. It's help to give context to the AI model. Default is `custom_function`.
-  - `promptVars` : (optional): A dictionary of variables to be used in the prompt. It's will replace the variable name by the variable value in the prompt. Format: `${variableName}`. Default is `{}`.
-  - `showDebug` (optional): If set to true, debug information will be printed to the console. Default is `false`.
-  - `current_date_time` (optional): The current date and time. Default is `new Date().toISOString()`. This is used to let's the AI model know the current date and time.
-  - `temperature` (optional): The sampling temperature for the AI model. Default is `0.8`
-  - `frequency_penalty` (optional): The frequency penalty for the AI model. Default is `0`
-  - `presence_penalty` (optional): The presence penalty for the AI model. Default is `0`
-  - `model` (optional): The AI model to use. Default is `gpt-3.5-turbo`.
-  - `max_tokens` (optional): The maximum number of tokens to generate.
-  - `top_p` (optional): The top p value for the AI model.
-  - `blockHijack` (optional): If true, the AI model will strictly follow the function's instructions and ignore any hijack attempts in the user message. Default is `false`.
-  - `retries` (optional): The number of times to retry the AI model if it fails to generate a response. Default is `3`.
-
-### promptVars
-
-The `promptVars` option is used to define the variables to be used in the prompt. It's will replace the variable name by the variable value in the prompt. Format: `${variableName}`.
-
-For instance:
-
-`This is a custom function that does something. Use ${variable1} and ${variable2} to do it.`
+The structure of the `options` object is as follows:
 
 ```javascript
-promptVars: {
-    "variable1": "value1",
-    "variable2": "value2",
+options = {
+  args: {}, // Arguments to be passed to the custom function
+  description: "", // Description of the function's purpose
+  funcReturn: {}, // Expected return type of the custom function
+  functionName: "", // Name of the custom function (optional)
+  promptVars: {}, // Variables used in the prompt (optional)
+  showDebug: false, // If true, debug information will be printed to the console (optional)
+  current_date_time: "", // Current date and time (optional)
+  temperature: 0.8, // Sampling temperature for the AI model (optional)
+  frequency_penalty: 0, // Frequency penalty for the AI model (optional)
+  presence_penalty: 0, // Presence penalty for the AI model (optional)
+  model: "gpt-3.5-turbo", // AI model to use (optional)
+  max_tokens: 0, // Maximum number of tokens to generate (optional)
+  top_p: 0, // Top p value for the AI model (optional)
+  blockHijack: false, // If true, the AI model will ignore any hijack attempts in the user message (optional)
+  retries: 3, // Number of times to retry the AI model if it fails to generate a response (optional)
 }
 ```
 
-This `promptVars` specification translates into the following prompt:
+Let's delve deeper into each of these options:
 
-`This is a custom function that does something. Use value1 and value2 to do it.`
+### args
+
+This holds the arguments to be passed to the custom function. It can be a string, number, array, object or a combination of these.
+
+### description
+
+This option provides a description of the function's purpose. It provides context to the AI model about the task it needs to perform.
+
 ### funcReturn
+
 
 The `funcReturn` option is used to define the expected return type of the custom function. It is expressed in a JavaScript object-like format, and it can be used to specify complex data structures like arrays and objects. 
 
@@ -187,7 +201,69 @@ You can choose either format based on your preference. If you're already familia
 
 The rest of the document will use the custom schema format for examples, but remember that you can always substitute it with the equivalent Zod schema.
 
-### Using Objects in funcReturn
+### functionName (optional)
+
+This is the name of the custom function to use. While it's optional, providing a function name can help give context to the AI model.
+
+### promptVars (optional)
+
+The `promptVars` option is used to define the variables to be used in the prompt. It's will replace the variable name by the variable value in the prompt. Format: `${variableName}`.
+
+For instance:
+
+`This is a custom function that does something. Use ${variable1} and ${variable2} to do it.`
+
+```javascript
+promptVars: {
+    "variable1": "value1",
+    "variable2": "value2",
+}
+```
+
+This `promptVars` specification translates into the following prompt:
+
+`This is a custom function that does something. Use value1 and value2 to do it.`
+### showDebug (optional)
+
+If set to true, debug information will be printed to the console.
+
+### current_date_time (optional)
+
+This is used to inform the AI model about the current date and time.
+
+### temperature (optional)
+
+This is the sampling temperature for the AI model.
+
+### frequency_penalty (optional)
+
+This sets the frequency penalty for the AI model.
+
+### presence_penalty (optional)
+
+This sets the presence penalty for the AI model.
+
+### model (optional)
+
+This defines the AI model to use. By default, it's set to `gpt-3.5-turbo`.
+
+### max_tokens (optional)
+
+This sets the maximum number of tokens to generate.
+
+### top_p (optional)
+
+This sets the top p value for the AI model.
+
+### blockHijack (optional)
+
+If set to true, the AI model will strictly follow the function's instructions and ignore any hijack attempts in the user message.
+
+### retries (optional)
+
+This sets the number of times to retry the AI model if it fails to generate a response.
+
+## Using Objects in funcReturn
 
 The `object` keyword can also be used in `funcReturn` to specify that the function should return an object. An object is a collection of key-value pairs.
 
@@ -307,19 +383,21 @@ const options = {
   args: { topic: 'history', difficulty: 'medium', num_questions: 3 },
   description: 'Generate N quiz  questions with the topic and the difficulty given. Return a list of questions and 4 possible answers + the correct answer.',
   funcReturn: {
-    type: "array",
-    items: {
-      question: { type: "string" },
-      answers: { type: "string[]" },
-      correct_answer: { type: "string" },
-    },
+    quizList: {
+      type: "array",
+      items: {
+        question: { type: "string" },
+        answers: { type: "string[]" },
+        correct_answer: { type: "string" },
+      },
+    }
   },
   model: 'gpt-4',
 };
 
 
 const quiz = await aiFunction(options);
-console.log(quiz);
+console.log(quiz.quizList);
 /*
 Output:
 [
@@ -359,12 +437,16 @@ const options = {
   functionName: 'suggest_gifts',
   args: { hobbies: 'photography, cooking', interests: 'travel, fashion' },
   description: 'Suggest gift ideas for someone who loves the given hobbies and interests.',
-  funcReturn: { type: "array", items: "string[]" },
+  funcReturn: { 
+    suggestions: {
+      type: "array", items: "string[]"
+    }
+  },
 };
 
 
 const giftIdeas = await aiFunction(options);
-console.log(giftIdeas); // Output: [ 'camera', 'cookbook', 'travel guidebook', 'fashion magazine' ]
+console.log(giftIdeas.suggestions); // Output: [ 'camera', 'cookbook', 'travel guidebook', 'fashion magazine' ]
 ```
 
 ### 3. Analyze and moderate a list of messages
@@ -381,6 +463,7 @@ const options = {
         args: messages,
         description: 'Analyze and moderate a list of messages. Return a list of messages with the "content" field updated with bad words changed with "*" to indicate whether the message was flagged for moderation.',
         funcReturn: {
+          moderatedMessages: {
             type: "array",
             items: {
               id: { type: "number" },
@@ -388,10 +471,11 @@ const options = {
               flagged: { type: "boolean" },
             },
           },
+        },
     };
 
 aiFunction(options).then(moderatedMessages => {
-  console.log(moderatedMessages); /*
+  console.log(moderatedMessages.moderatedMessages); /*
    Output:
     [
       { id: 1, content: 'Hello, world!', flagged: false },
@@ -416,12 +500,16 @@ let aiData = await aiFunction({
     },
     functionName: "translate_text",
     description: "Translate text from one language to another. Use the to arguments to specify destination language. The text is from a game user interface. Return a string with the translated text",
-    // No funcReturn required if the return is a string
+    funcReturn: { 
+      translatedText: { 
+        type: "string" 
+      } 
+    },
     showDebug: false,
-    temperature: 0.7,
+    temperature: 0,
 });
 
-console.log(aiData); // Output: "Hallo Welt!"
+console.log(aiData.translatedText); // Output: "Hallo Welt!"
 ```
 
 ### 5. Shorten a text
@@ -433,22 +521,25 @@ let aiData = await aiFunction({
     },
     functionName: "shorten_sentence",
     description: "Rewrite the sentence to a minimum of words without breaking the context or important data. If the sentence can't be shorten, it will return the same sentence.",
-    // No funcReturn required if the return is a string
-    temperature: 1,
+    funcReturn: { 
+      shortenedSentence: { 
+        type: "string" 
+      } 
+    },
+    temperature: 0,
 });
 
-console.log(aiData); // Output: "I am a sentence that is too long and I need to be shortened. Just keep the important information."
+console.log(aiData.shortenedSentence); // Output: "I am a sentence that is too long and I need to be shortened. Just keep the important information."
 ```
-
 
 
 ## Tests
 
-The `test_ai_function.js` file contains a series of tests for the `aiFunction`. These tests cover various use cases and can be run using the `runTests` function with the desired AI model as an argument.
+The `test_ai_function.js` file provides a comprehensive suite of tests designed to verify the functionality and accuracy of the `aiFunction` across a range of scenarios. These tests can be executed by invoking the `runTests` function and specifying the desired AI model as an argument.
 
 ### Test Results
 
-A total of 60 tests for each function were performed using the GPT-3.5-turbo model. The table below shows the success rate for each function:
+We performed a total of 60 tests for each function using the GPT-3.5-turbo model. The table below demonstrates the success rates for each function:
 
 | Function                    | GPT-3.5-turbo | GPT-4 |
 |-----------------------------|---------------|-------|
@@ -459,26 +550,18 @@ A total of 60 tests for each function were performed using the GPT-3.5-turbo mod
 | Find capital of cities      | 100%       | N/A   |
 | Grammar correction          | 100%       | N/A   |
 | Detect language in text     | 100%       | N/A   |
+| Encrypt text                | 100%    | N/A   |
 | Generate Random Password    | 60%-100%   | N/A   |
-| Encrypt text                | 80-100%    | N/A   |
-| Calculate area of triangle  | 0%-50%     | N/A   |
-| Calculate area of triangle (Using mathjs evaluated)  | 100%     | N/A   |
-| Calculate the approximate surface area of an ellipsoid  | 0%     | N/A   |
-| Calculate the approximate surface area of an ellipsoid (Using mathjs evaluated)  | 100%     | N/A   |
 
+Please note that these results can be further improved by optimizing parameters such as the prompt, temperature, and others according to the specific function and use case.
 
-`Some results can be improved by optimising the prompt, temperature, and other parameters according to the function and the use case.`
-
-I currently do not have access to the GPT-4 API. Once I have access, I will update the table with the test results.
+As of now, I do not have access to the GPT-4 API. I will update this table with GPT-4 test results once access is granted.
 
 ### Disclaimer
 
-It's important to note that AI functions are not well-suited for certain tasks, particularly those involving mathematical calculations and precision. As observed in the case of calculating the area of a triangle and generating random passwords, GPT models can struggle with providing accurate results. The limitations of GPT models in such cases are mainly due to their inherent inability to perform precise arithmetic and the ambiguity in understanding user inputs. Although the models may work sometimes, the accuracy is too low because it depends on calculations, and GPT models are better suited for text completion tasks.
+While GPT models excel in language understanding and generation tasks, they have certain limitations when it comes to tasks requiring mathematical precision. For example, generating a random password of a specific length might not always yield the expected results. This is because GPT models measure length in terms of tokens, not characters. A token can correspond to a whole word, a single character, or anything in between, depending on the language and context. Therefore, when asked to generate a password of a specific length, the model might interpret that as a token length rather than a character length, leading to discrepancies in the output.
 
-In conclusion, while AI functions can be helpful in various scenarios, they may not be the optimal choice for tasks requiring mathematical accuracy or specific domain knowledge. For such use-cases, utilizing traditional algorithms and libraries would yield better results.
-
-But the prompt can be used in addition of some libraries to improve the results. For example, the `calculate area of triangle` or `calculate the approximate surface area of an ellipsoid` function can be improved by using the `mathjs` library to evaluate the operation. The prompt is used to convert text to a mathjs expression, and the result is evaluated by mathjs. 
-
+In summary, while AI functions can be incredibly useful across a variety of scenarios, they might not be the best choice for tasks requiring mathematical precision or domain-specific knowledge. In such cases, traditional algorithms and libraries would likely provide more accurate results.
 
 # About Hijacking
 
